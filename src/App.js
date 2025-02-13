@@ -19,9 +19,7 @@ const App = () => {
   // Complete task function
   const completeTask = (index) => {
     const updatedTasks = tasks.map((task, taskIndex) =>
-      taskIndex === index
-        ? { ...task, completed: !task.completed }
-        : task
+      taskIndex === index ? { ...task, completed: !task.completed } : task
     );
     setTasks(updatedTasks);
   };
@@ -31,14 +29,12 @@ const App = () => {
     setTasks([...tasks, { text, completed: false, dueDate, alerted: false }]);
   };
 
-  // UseEffect to load saved tasks and dark mode settings from localStorage
+  // Load tasks and theme from localStorage
   useEffect(() => {
     const savedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
     setTasks(savedTasks);
     const savedTheme = localStorage.getItem("darkMode") === "true";
     setDarkMode(savedTheme);
-
-    // Apply dark mode to body class
     document.body.classList.toggle("dark", savedTheme);
   }, []);
 
@@ -53,27 +49,27 @@ const App = () => {
     document.body.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
-  // Check for due tasks and alert the user
+  // ✅ Check for due tasks every 10 seconds instead of 24 hours
   useEffect(() => {
     const interval = setInterval(() => {
-      tasks.forEach((task, index) => {
-        if (task.dueDate && !task.alerted) {
-          const taskDueDate = new Date(task.dueDate);
-          const currentDate = new Date();
-          if (taskDueDate.toDateString() === currentDate.toDateString()) {
-            alert(`Task "${task.text}" is due today!`);
-            setTasks((prevTasks) =>
-              prevTasks.map((t, i) =>
-                i === index ? { ...t, alerted: true } : t
-              )
-            );
+      setTasks((prevTasks) => {
+        return prevTasks.map((task, index) => {
+          if (task.dueDate && !task.alerted) {
+            const taskDueDate = new Date(task.dueDate).toISOString().split("T")[0];
+            const currentDate = new Date().toISOString().split("T")[0];
+            
+            if (taskDueDate === currentDate) {
+              alert(`Task "${task.text}" is due today!`);
+              return { ...task, alerted: true }; // ✅ Update alerted state
+            }
           }
-        }
+          return task;
+        });
       });
-    }, 86400000); // Check every 24 hours
+    }, 10000); // ✅ Check every 10 seconds
 
-    return () => clearInterval(interval); // Cleanup interval on component unmount
-  }, [tasks]);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center animated-bg transition-all duration-500">
